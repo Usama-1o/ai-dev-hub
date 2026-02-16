@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Burger Bliss • Order Now</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+  <style>
+    .cart-slide { transform: translateX(100%); transition: transform 0.4s ease; }
+    .cart-slide.open { transform: translateX(0); }
+    .toast { animation: slideUp 0.4s, fadeOut 0.4s 2.5s forwards; }
+    @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+  </style>
+</head>
+<body class="bg-zinc-950 text-white font-sans">
+
+  <!-- Navbar -->
+  <nav class="bg-zinc-900 sticky top-0 z-50 border-b border-zinc-800">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="text-3xl font-bold text-orange-500">Burger<span class="text-white">Bliss</span></div>
+      <div class="hidden md:flex gap-8 text-lg">
+        <a href="#" class="hover:text-orange-500">Menu</a>
+        <a href="#" class="hover:text-orange-500">About</a>
+        <a href="#" class="hover:text-orange-500">Contact</a>
+      </div>
+      <button id="cart-btn" class="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 px-6 py-3 rounded-full transition">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span>Cart</span>
+        <span id="cart-count" class="bg-white text-orange-600 text-xs font-bold px-2.5 py-0.5 rounded-full">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="h-screen bg-[url('https://picsum.photos/id/1015/2000/1200')] bg-cover bg-center relative">
+    <div class="absolute inset-0 bg-black/70"></div>
+    <div class="absolute inset-0 flex items-center justify-center text-center px-6">
+      <div>
+        <h1 class="text-6xl md:text-7xl font-bold mb-4">The Best Burgers<br>in Town</h1>
+        <p class="text-xl text-zinc-300 mb-8">Fresh ingredients • Made with love • Delivered fast</p>
+        <button onclick="document.getElementById('menu').scrollIntoView({behavior:'smooth'})" 
+                class="bg-orange-600 hover:bg-orange-700 text-xl px-10 py-4 rounded-full font-semibold transition">
+          Order Now
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Menu -->
+  <section id="menu" class="max-w-7xl mx-auto px-6 py-16">
+    <h2 class="text-5xl font-bold text-center mb-12">Our Menu</h2>
+
+    <!-- Filters -->
+    <div class="flex justify-center gap-3 mb-10 flex-wrap">
+      <button data-filter="all" class="filter-btn active bg-orange-600 px-6 py-2 rounded-full">All</button>
+      <button data-filter="beef" class="filter-btn bg-zinc-800 hover:bg-zinc-700 px-6 py-2 rounded-full">Beef</button>
+      <button data-filter="chicken" class="filter-btn bg-zinc-800 hover:bg-zinc-700 px-6 py-2 rounded-full">Chicken</button>
+      <button data-filter="veggie" class="filter-btn bg-zinc-800 hover:bg-zinc-700 px-6 py-2 rounded-full">Veggie</button>
+    </div>
+
+    <!-- Burger Grid -->
+    <div id="burger-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <!-- Populated by JS -->
+    </div>
+  </section>
+
+  <!-- Cart Sidebar -->
+  <div id="cart-sidebar" class="cart-slide fixed top-0 right-0 h-full w-full md:w-96 bg-white text-zinc-900 shadow-2xl z-50 overflow-hidden flex flex-col">
+    <div class="p-6 border-b flex items-center justify-between">
+      <h3 class="text-2xl font-bold">Your Cart (<span id="sidebar-count">0</span>)</h3>
+      <button id="close-cart" class="text-3xl">&times;</button>
+    </div>
+
+    <div id="cart-items" class="flex-1 overflow-auto p-6 space-y-6">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="p-6 border-t">
+      <div class="flex justify-between text-lg mb-2">
+        <span>Subtotal</span>
+        <span id="subtotal">Rs. 0</span>
+      </div>
+      <div class="flex justify-between text-lg mb-6">
+        <span>Delivery</span>
+        <span class="text-green-600">Free</span>
+      </div>
+      <div class="flex justify-between text-2xl font-bold mb-6">
+        <span>Total</span>
+        <span id="total">Rs. 0</span>
+      </div>
+      <button onclick="checkout()" 
+              class="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-full text-xl font-semibold transition">
+        Proceed to Checkout
+      </button>
+      <button onclick="clearCart()" 
+              class="w-full text-red-600 mt-3 py-3 text-sm hover:underline">
+        Clear Cart
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-orange-600 text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 toast">
+    <i class="fa-solid fa-check"></i>
+    <span id="toast-text"></span>
+  </div>
+
+  <script>
+    // Tailwind script
+    tailwind.config = { content: [], theme: { extend: {} } };
+
+    const burgers = [
+      { id: 1, name: "Classic Cheeseburger", price: 899, img: "https://picsum.photos/id/29/400/300", category: "beef", desc: "Beef patty, cheese, lettuce, tomato & special sauce" },
+      { id: 2, name: "BBQ Bacon Burger", price: 1299, img: "https://picsum.photos/id/36/400/300", category: "beef", desc: "Smoky BBQ sauce, crispy bacon & onion rings" },
+      { id: 3, name: "Spicy Crispy Chicken", price: 1049, img: "https://picsum.photos/id/201/400/300", category: "chicken", desc: "Crispy chicken, spicy mayo & pickles" },
+      { id: 4, name: "Veggie Delight", price: 799, img: "https://picsum.photos/id/133/400/300", category: "veggie", desc: "Plant-based patty, avocado & fresh veggies" },
+      { id: 5, name: "Mushroom Swiss", price: 1149, img: "https://picsum.photos/id/43/400/300", category: "beef", desc: "Sautéed mushrooms & Swiss cheese" },
+      { id: 6, name: "Double Trouble", price: 1399, img: "https://picsum.photos/id/60/400/300", category: "beef", desc: "Two juicy beef patties, double cheese" },
+      { id: 7, name: "Teriyaki Chicken", price: 1099, img: "https://picsum.photos/id/251/400/300", category: "chicken", desc: "Grilled chicken, teriyaki glaze & pineapple" },
+      { id: 8, name: "Falafel Burger", price: 849, img: "https://picsum.photos/id/292/400/300", category: "veggie", desc: "Crispy falafel, tahini & fresh salad" }
+    ];
+
+    let cart = [];
+
+    // Load cart from localStorage
+    function loadCart() {
+      const saved = localStorage.getItem('burgerCart');
+      if (saved) cart = JSON.parse(saved);
+      updateCartCount();
+    }
+
+    function saveCart() {
+      localStorage.setItem('burgerCart', JSON.stringify(cart));
+    }
+
+    function updateCartCount() {
+      const count = cart.reduce((sum, item) => sum + item.qty, 0);
+      document.getElementById('cart-count').textContent = count;
+    }
+
+    // Render menu
+    function renderMenu(filteredBurgers) {
+      const grid = document.getElementById('burger-grid');
+      grid.innerHTML = '';
+      
+      filteredBurgers.forEach(burger => {
+        const card = document.createElement('div');
+        card.className = "bg-zinc-900 rounded-3xl overflow-hidden hover:scale-105 transition";
+        card.innerHTML = `
+          <img src="${burger.img}" class="w-full h-64 object-cover">
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-3">
+              <h3 class="text-2xl font-semibold">${burger.name}</h3>
+              <span class="text-orange-500 font-bold text-xl">Rs. ${burger.price}</span>
+            </div>
+            <p class="text-zinc-400 text-sm mb-6">${burger.desc}</p>
+            <button onclick="addToCart(${burger.id})" 
+                    class="w-full bg-orange-600 hover:bg-orange-700 py-4 rounded-2xl font-semibold transition">
+              Add to Cart
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Filter
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'bg-orange-600'));
+        btn.classList.add('active', 'bg-orange-600');
+        
+        const filter = btn.dataset.filter;
+        const filtered = filter === 'all' ? burgers : burgers.filter(b => b.category === filter);
+        renderMenu(filtered);
+      });
+    });
+
+    // Add to cart
+    window.addToCart = function(id) {
+      const burger = burgers.find(b => b.id === id);
+      const existing = cart.find(item => item.id === id);
+      
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ ...burger, qty: 1 });
+      }
+      
+      saveCart();
+      updateCartCount();
+      showToast(`${burger.name} added to cart!`);
+    };
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-text').textContent = message;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    // Render cart
+    function renderCart() {
+      const container = document.getElementById('cart-items');
+      container.innerHTML = '';
+      
+      if (cart.length === 0) {
+        container.innerHTML = `<p class="text-center text-zinc-500 py-12">Your cart is empty 🍔</p>`;
+        document.getElementById('subtotal').textContent = 'Rs. 0';
+        document.getElementById('total').textContent = 'Rs. 0';
+        return;
+      }
+
+      let subtotal = 0;
+
+      cart.forEach((item, index) => {
+        const itemTotal = item.price * item.qty;
+        subtotal += itemTotal;
+
+        const div = document.createElement('div');
+        div.className = "flex gap-4";
+        div.innerHTML = `
+          <img src="${item.img}" class="w-20 h-20 object-cover rounded-2xl">
+          <div class="flex-1">
+            <div class="flex justify-between">
+              <h4 class="font-semibold">${item.name}</h4>
+              <button onclick="removeFromCart(${index})" class="text-red-600 text-xl">&times;</button>
+            </div>
+            <p class="text-orange-600 font-bold">Rs. ${item.price}</p>
+            
+            <div class="flex items-center gap-4 mt-3">
+              <button onclick="changeQty(${index}, -1)" class="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-zinc-100">-</button>
+              <span class="font-semibold w-6 text-center">${item.qty}</span>
+              <button onclick="changeQty(${index}, 1)" class="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-zinc-100">+</button>
+            </div>
+          </div>
+          <div class="font-bold text-right">Rs. ${itemTotal}</div>
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('subtotal').textContent = `Rs. ${subtotal}`;
+      document.getElementById('total').textContent = `Rs. ${subtotal}`;
+      document.getElementById('sidebar-count').textContent = cart.reduce((a, c) => a + c.qty, 0);
+    }
+
+    window.changeQty = function(index, change) {
+      cart[index].qty += change;
+      if (cart[index].qty < 1) cart.splice(index, 1);
+      saveCart();
+      renderCart();
+      updateCartCount();
+    };
+
+    window.removeFromCart = function(index) {
+      cart.splice(index, 1);
+      saveCart();
+      renderCart();
+      updateCartCount();
+    };
+
+    function clearCart() {
+      if (confirm('Clear entire cart?')) {
+        cart = [];
+        saveCart();
+        renderCart();
+        updateCartCount();
+      }
+    }
+
+    window.checkout = function() {
+      if (cart.length === 0) return;
+      alert("🎉 Thank you for your order! (This is a frontend demo)");
+      cart = [];
+      saveCart();
+      renderCart();
+      updateCartCount();
+      document.getElementById('cart-sidebar').classList.remove('open');
+    };
+
+    // Cart open/close
+    document.getElementById('cart-btn').addEventListener('click', () => {
+      document.getElementById('cart-sidebar').classList.add('open');
+      renderCart();
+    });
+
+    document.getElementById('close-cart').addEventListener('click', () => {
+      document.getElementById('cart-sidebar').classList.remove('open');
+    });
+
+    // Initialize
+    loadCart();
+    renderMenu(burgers);
+  </script>
+</body>
+</html>
